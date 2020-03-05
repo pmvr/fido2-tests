@@ -8,13 +8,9 @@ from numbers import Number
 from fido2.ctap2 import ES256, AttestedCredentialData, PinProtocolV1
 from fido2.utils import hmac_sha256, sha256
 
-if 'trezor' in sys.argv:
-    from .vendor.trezor.utils import DeviceSelectCredential
-else:
-    from .vendor.solo.utils import DeviceSelectCredential
-
 name_list = open("data/first-names.txt").readlines()
 
+DeviceSelectCredential = False
 
 def shannon_entropy(data):
     s = 0.0
@@ -106,7 +102,7 @@ def generate(param):
     if param == "allow_list":
         return []
     if param == "on_keepalive":
-        return DeviceSelectCredential(1)
+        return DeviceSelectCredential
     return None
 
 
