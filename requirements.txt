@@ -1,5 +1,3 @@
 fido2 >= 0.8.0
-pyscard
 pytest
 pytest-ordering
-solo-python >=0.0.12
