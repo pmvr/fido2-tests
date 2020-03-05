@@ -36,7 +36,7 @@ def MC_RK_Res(device, SetPINRes):
 
 @pytest.fixture(scope="class")
 def GA_RK_Res(device, MC_RK_Res):
-    req = FidoRequest(MC_RK_Res, options=None)
+    req = FidoRequest(MC_RK_Res, options=None)  # mvr: options=None
     res = device.sendGA(*req.toGA())
     setattr(res, "request", req)
     return res
@@ -62,7 +62,7 @@ class TestResidentKey(object):
             res = device.sendMC(*req.toMC())
             regs.append(res)
 
-        req = FidoRequest(MC_RK_Res, user=generate_user())
+        req = FidoRequest(MC_RK_Res, user=generate_user(), options=None)
         res = device.sendGA(*req.toGA())
 
         assert res.number_of_credentials == 4
@@ -81,7 +81,7 @@ class TestResidentKey(object):
                     if y not in x.user.keys():
                         print("FAIL: %s was not in user: " % y, x.user)
 
-        for x, y in zip(regs, auths):
+        for x, y in zip(regs, auths[::-1]):  # mvr: reverse order: The first credential is the most recent credential that was created.
             verify(x, y, req.cdh)
 
     @pytest.mark.skipif('trezor' not in sys.argv, reason="Only Trezor has a display.")
@@ -147,6 +147,7 @@ class TestResidentKey(object):
         user_max = generate_user_maximum()
         req = FidoRequest(MC_RK_Res, user=user_max)
         resMC = device.sendMC(*req.toMC())
+        req = FidoRequest(MC_RK_Res, user=user_max, options=None)  # mvr: 'rk' invalid
         resGA = device.sendGA(*req.toGA())
         credentials = resGA.number_of_credentials
         assert credentials == 5
@@ -155,7 +156,7 @@ class TestResidentKey(object):
         for i in range(credentials - 1):
             auths.append(device.ctap2.get_next_assertion())
 
-        user_max_GA = auths[-1]
+        user_max_GA = auths[0]  # mvr: instead auths[-1]: The first credential is the most recent one.
         verify(resMC, user_max_GA, req.cdh)
 
         if MC_RK_Res.request.pin_protocol:
@@ -191,7 +192,7 @@ class TestResidentKey(object):
             users.append(user)
             return user
 
-        req = FidoRequest(MC_RK_Res, user=get_user())
+        req = FidoRequest(MC_RK_Res, user=get_user(), options=None)  # mvr
         res = device.sendGA(*req.toGA())
         current_credentials_count = res.number_of_credentials
 
@@ -203,7 +204,7 @@ class TestResidentKey(object):
             res = device.sendMC(*req.toMC())
             regs.append(res)
 
-        req = FidoRequest(MC_RK_Res, user=generate_user_maximum())
+        req = FidoRequest(MC_RK_Res, user=generate_user_maximum(), options=None)  # mvr
         res = device.sendGA(*req.toGA())
         assert res.number_of_credentials == RK_CAPACITY_PER_RP
 
@@ -214,20 +215,20 @@ class TestResidentKey(object):
         with pytest.raises(CtapError) as e:
             device.ctap2.get_next_assertion()
 
-        auths = auths[-RK_to_generate:]
+        auths = auths[:RK_to_generate]  # mvr
         regs = regs[-RK_to_generate:]
         users = users[-RK_to_generate:]
 
         assert len(auths) == len(users)
 
         if MC_RK_Res.request.pin_protocol:
-            for x, u in zip(auths, users):
+            for x, u in zip(auths[::-1], users):  # mvr
                 for y in ("name", "icon", "displayName", "id"):
                     assert y in x.user.keys()
                     assert x.user[y] == u[y]
 
         assert len(auths) == len(regs)
-        for x, y in zip(regs, auths):
+        for x, y in zip(regs, auths[::-1]):  # mvr: reverse order: The first credential is the most recent credential that was created.
             verify(x, y, req.cdh)
 
     @pytest.mark.skipif('trezor' not in sys.argv, reason="Only Trezor has a display.")
