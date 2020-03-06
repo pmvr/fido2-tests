@@ -11,11 +11,11 @@ class TestSetPin(object):
     def test_send_zero_length_pin_auth(self, resetDevice):
         with pytest.raises(CtapError) as e:
             reg = resetDevice.sendMC(*FidoRequest(pin_auth=b"").toMC())
-        assert e.value.code == CtapError.ERR.PIN_NOT_SET
+        assert e.value.code == CtapError.ERR.INVALID_LENGTH  # mvr: Minimum PIN Length: 4 bytes
 
         with pytest.raises(CtapError) as e:
             reg = resetDevice.sendGA(*FidoRequest(pin_auth=b"").toGA())
-        assert e.value.code in (CtapError.ERR.PIN_NOT_SET, CtapError.ERR.NO_CREDENTIALS)
+        assert e.value.code in (CtapError.ERR.PIN_NOT_SET, CtapError.ERR.NO_CREDENTIALS, CtapError.ERR.INVALID_LENGTH)  # mvr: Minimum PIN Length: 4 bytes
 
     def test_set_pin(self, device):
         device.client.pin_protocol.set_pin("TestPin")
