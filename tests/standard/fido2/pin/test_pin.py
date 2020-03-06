@@ -101,13 +101,14 @@ class TestPin(object):
         allow_list = [
             {"type": "public-key", "id": reg.auth_data.credential_data.credential_id}
         ]
-        auth = device.sendGA(
-            *FidoRequest(
-                SetPinRes, allow_list=allow_list, pin_auth=None, pin_protocol=None
-            ).toGA()
-        )
 
-        assert not (auth.auth_data.flags & (1 << 2))
+        with pytest.raises(CtapError) as e:
+            auth = device.sendGA(
+                *FidoRequest(
+                    SetPinRes, allow_list=allow_list, pin_auth=None, pin_protocol=None
+                ).toGA()
+            )
+        assert e.value.code == CtapError.ERR.PIN_REQUIRED
 
         with pytest.raises(CtapError) as e:
             reg = device.sendMC(
@@ -119,11 +120,11 @@ class TestPin(object):
     def test_zero_length_pin_auth(self, device, SetPinRes):
         with pytest.raises(CtapError) as e:
             reg = device.sendMC(*FidoRequest(SetPinRes, pin_auth=b"").toMC())
-        assert e.value.code == CtapError.ERR.PIN_AUTH_INVALID
+        assert e.value.code == CtapError.ERR.INVALID_LENGTH
 
         with pytest.raises(CtapError) as e:
             reg = device.sendGA(*FidoRequest(SetPinRes, pin_auth=b"").toGA())
-        assert e.value.code == CtapError.ERR.PIN_AUTH_INVALID
+        assert e.value.code == CtapError.ERR.INVALID_LENGTH
 
     def test_make_credential_no_pin(self, device, SetPinRes):
         with pytest.raises(CtapError) as e:
