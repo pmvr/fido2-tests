@@ -16,20 +16,19 @@ def test_lockout(device, resetDevice):
 
     req.pin_auth = hmac_sha256(pin_token, req.cdh)[:16]
 
+    attempts = 8
     for i in range(1, 10):
-        err = [CtapError.ERR.PIN_INVALID]
+        err = CtapError.ERR.PIN_INVALID
         if i in (3, 6):
-            err = [CtapError.ERR.PIN_AUTH_BLOCKED]
+            err = CtapError.ERR.PIN_AUTH_BLOCKED
         elif i >= 8:
-            err = [CtapError.ERR.PIN_BLOCKED, CtapError.ERR.PIN_INVALID]
+            err = CtapError.ERR.PIN_BLOCKED
 
         with pytest.raises(CtapError) as e:
             device.sendPP("WrongPin")
-        assert e.value.code in err
+        assert e.value.code == err
 
-        attempts = 8 - i
-        if i > 8:
-            attempts = 0
+        attempts = max(0, attempts-1)
 
         res = device.ctap2.client_pin(1, PinProtocolV1.CMD.GET_RETRIES)
         assert res[3] == attempts
